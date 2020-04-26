@@ -12,13 +12,13 @@ impl Arguments {
 
 fn parse(args: &[String]) -> Result<Arguments, &str> {
   if args.len() == 2 {
-    if args[1] == "--help" {
-      return Ok(Arguments {
+    return if args[1] == "--help" {
+      Ok(Arguments {
         flag: "--help".to_string(),
         url: "".to_string(),
-      });
+      })
     } else {
-      return Err("unknown flag");
+      Err("unknown flag")
     }
   }
 
