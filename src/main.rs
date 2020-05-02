@@ -1,35 +1,57 @@
-// use std::env;
-
+use regex::Regex;
 use select::document::Document;
-use select::predicate::{Class, Name};
+use select::predicate::{Attr, Class, Name, Predicate};
+use std::collections::HashMap;
+use std::env;
+use std::error::Error;
 
 mod options;
-mod parse;
+
+const BASE: &str = "http://amzn.com/";
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let args: Vec<String> = env::args().collect();
-    // let cli_args = options::Args::new(&args);
-    // let asin = cli_args.unwrap().value;
-    // let url = format!("https://amzn.to/{}", asin);
-    // let response = reqwest::get(&url).await?.text().await?;
+async fn main() -> Result<(), Box<dyn Error>> {
+    // get asin from arg
+    let args: Vec<String> = env::args().collect();
+    let cli_args = options::Args::new(&args);
+    let asin = cli_args.unwrap().value;
 
-    // span.id=productTitle
-    // span.id=productSubtitle
-    // li.id=SalesRank
-    // ul.class=zg_hrsr
-    //   li.class=zg_hrsr_item
-    //     span.class=zg_hrsr_rank
-    //     span.class=zg_hrsr_ladder
-    // let document = Document::from(include_str!("content.html"));
+    // get html
+    let url = format!("{}{}", BASE, asin);
+    let html = reqwest::get(&url).await?.text().await?;
 
-    // get_rankings(&response);
+    // convert to doc to parse
+    let doc = Document::from(&*html);
+
+    // parse page title
+    let title_raw = doc.find(Attr("id", "productTitle")).next().unwrap().text();
+    let title_clean = title_raw.trim();
+
+    println!("{}", title_clean);
+
+    // loop all ranking elements
+    let mut ranks = HashMap::new();
+
+    for node in doc.find(Class("zg_hrsr_item")) {
+        // rank
+        let rank = node.find(Class("zg_hrsr_rank")).next().unwrap().text();
+
+        // title
+        let group = node
+            .find(Class("zg_hrsr_ladder").descendant(Name("a")))
+            .next()
+            .unwrap()
+            .text();
+
+        let clean_group = group
+            .replace("&amp;", "")
+            .replace("\n", "")
+            .replace(";", "");
+        let re = Regex::new(r"\s+").unwrap();
+        let after = re.replace_all(clean_group.as_str(), " ");
+        ranks.insert(rank, after.to_string());
+        println!("{:?}", ranks);
+    }
+
     Ok(())
 }
-
-// fn get_rankings(response: &str) {
-//     Document::from(&*response)
-//         .find(Name("a"))
-//         .filter_map(|n| n.attr("href"))
-//         .for_each(|x| println!("{}", x));
-// }
