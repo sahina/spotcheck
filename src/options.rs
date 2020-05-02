@@ -1,33 +1,30 @@
 #[derive(Debug)]
-pub struct Arguments {
-  pub flag: String,
-  pub url: String,
+pub struct Args {
+    pub flag: String,
+    pub value: String,
 }
 
-impl Arguments {
-  pub fn new(args: &[String]) -> Result<Arguments, &str> {
-    return parse(args);
-  }
-}
-
-fn parse(args: &[String]) -> Result<Arguments, &str> {
-  if args.len() == 2 {
-    if args[1] == "--help" {
-      return Ok(Arguments {
-        flag: "--help".to_string(),
-        url: "".to_string(),
-      });
-    } else {
-      return Err("unknown flag");
+impl Args {
+    pub fn new(args: &[String]) -> Result<Args, &str> {
+        return parse(args);
     }
-  }
+}
 
-  // spotcheck --url https://www.amazon.com/gp/buy/shipoptionselect/handlers/display.html?hasWorkingJavascript=1
-  if args.len() == 3 && args[1] == "--url" {
-    return Ok(Arguments {
-      flag: args[1].clone(),
-      url: args[2].clone(),
-    });
-  }
-  return Err("unknown args...");
+fn parse(args: &[String]) -> Result<Args, &str> {
+    if args.len() == 2 {
+        return Ok(Args {
+            flag: "--asin".to_string(),
+            value: args[1].clone(),
+        });
+    }
+
+    // spotcheck --asin B00C7C67O2
+    // spotcheck B00C7C67O2
+    if args.len() == 3 && args[1] == "--asin" {
+        return Ok(Args {
+            flag: args[1].clone(),
+            value: args[2].clone(),
+        });
+    }
+    return Err("unknown args...");
 }
